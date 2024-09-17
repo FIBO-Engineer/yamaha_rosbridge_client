@@ -1,79 +1,106 @@
 #!/usr/bin/python3
 
 import rospy
+import roslibpy
 from autoware_msgs.msg import VehicleCmd
-import websockets
-import asyncio
-import json
+import time
 
-class Ros1ToRos2():
+class RosBridgeConnector():
     def __init__(self):
         rospy.init_node('yamaha_rosbridge_client')
-        self.uri = rospy.get_param("~uri")
-        self.advertise_msg = dict()
-        self.publish_msg = dict()
-        self.subscriber = rospy.Subscriber('/vehicle_cmd', VehicleCmd, self.callback, queue_size=5)
-        self.is_call_publish_to_websocket = False
-        self.is_advertise_initial = False
+        self.subscriber = rospy.Subscriber('/vehicle_cmd', VehicleCmd, self.vehicle_cmd_callback, queue_size=5)
+        self.host = rospy.get_param("~host", "127.0.0.1")
+        self.port = rospy.get_param("~port", "9090")
+        self.reconnection_period = rospy.get_param("~reconnection_period", 1)
+        self.client = roslibpy.Ros(host=self.host, port=self.port)
+        self.publisher = roslibpy.Topic(self.client, "/nav_vel", "geometry_msgs/TwistStamped")
+        self.timestamp = 0
 
-    def callback(self, data):
-        self.publish_msg = {
-            "op": "publish",
-            "topic": "/nav_vel",
-            "msg": {
-                "header": {
-                    "stamp": {
-                        "secs": data.header.stamp.secs,
-                        "nsecs": data.header.stamp.nsecs
-                    },
-                    "frame_id": data.header.frame_id  
-                },
-                "twist": {
-                    "linear": {
-                        "x": data.twist_cmd.twist.linear.x,
-                        "y": data.twist_cmd.twist.linear.y,
-                        "z": data.twist_cmd.twist.linear.z
-                    },
-                    "angular": {
-                        "x": data.twist_cmd.twist.angular.x,
-                        "y": data.twist_cmd.twist.angular.y,
-                        "z": data.twist_cmd.twist.angular.z
-                    }
-                }
-            }
-        }
-        self.is_call_publish_to_websocket = True
-
-    async def advertise_and_publish_to_websocket(self):
-        self.advertise_msg = {
-            "op": "advertise",
-            "topic": "/nav_vel",
-            "type": "geometry_msgs/TwistStamped"
-        }
+    def connect_to_server(self):
         try:
-            async with websockets.connect(self.uri) as websocket:
-                await websocket.send(json.dumps(self.advertise_msg))
-                if not self.is_advertise_initial:
-                    rospy.loginfo("Advertise the topic!")
-                    self.is_advertise_initial = True
-                if self.is_call_publish_to_websocket:
-                    await websocket.send(json.dumps(self.publish_msg))
-                    rospy.loginfo("Publish data!")
-                    self.is_call_publish_to_websocket = False
-
+            self.client.run()
+            rospy.loginfo("Connected to server")
         except Exception as e:
-            rospy.logerr("Error: %s", e)
+            rospy.logerr("Cannot connect to server! and the error is %s", e)
 
-    def handling(self):
-        asyncio.get_event_loop().run_until_complete(self.advertise_and_publish_to_websocket())  
+    def advertise_topic(self):
+        try:
+            if self.client.is_connected:
+                self.publisher.advertise()
+                rospy.loginfo("Advertised the topic")
+            else:
+                rospy.logerr("Cannot connect to server and cannot advertise the topic!")
+        except Exception as e:
+            rospy.logerr("Cannot advertise the topic! and the error is %s", e)
+
+    def un_advertise_topic(self):
+        try:
+            if self.client.is_connected:
+                self.publisher.unadvertise()
+                rospy.loginfo("Unadvertised the topic")
+            else:
+                rospy.logerr("Cannot connect to server and cannot unadvertise the topic!")
+        except Exception as e:
+            rospy.logerr("Cannot unadvertise the topic! and the error is %s", e)
+    
+    def exit_from_the_server(self):
+        try:    
+            self.client.terminate()
+            rospy.loginfo("Exited from the server")
+        except Exception as e:
+            rospy.logerr("Cannot exit from the server! and the error is %s", e)
+
+    def vehicle_cmd_callback(self, data):
+        try:
+            if self.client.is_connected:
+                pub_message = roslibpy.Message(
+                    {
+                        "header": {
+                            "stamp": {
+                                "secs": data.header.stamp.secs,
+                                "nsecs": data.header.stamp.nsecs
+                            },
+                            "frame_id": data.header.frame_id
+                        },
+                        "twist": {
+                            "linear": {
+                                "x": data.twist_cmd.twist.linear.x,
+                                "y": data.twist_cmd.twist.linear.y,
+                                "z": data.twist_cmd.twist.linear.z
+                            },
+                            "angular": {
+                                "x": data.twist_cmd.twist.angular.x,
+                                "y": data.twist_cmd.twist.angular.y,
+                                "z": data.twist_cmd.twist.angular.z
+                            }
+                        }
+                    }
+                )
+                self.publisher.publish(pub_message)
+                rospy.loginfo("Published message to the topic")
+            else:
+                rospy.logerr("Cannot connect to server!")
+        except Exception as e:
+            rospy.logerr("Cannot publish message to the topic! and the error is %s", e)
+
+    def process_handling(self):
+        if time.time() - self.timestamp > self.reconnection_period: 
+            if not self.client.is_connected:
+                rospy.logwarn("Cannot connect to the server! and Retry to connect and advertise topic to the server")
+                self.connect_to_server()
+                self.advertise_topic()
+            self.timestamp = time.time()
 
 def main():
-    init = Ros1ToRos2()
-    loop_sleep_rate = rospy.get_param("~loop_sleep_rate")
-    rate = rospy.Rate(loop_sleep_rate)
+    init = RosBridgeConnector()
+    init.connect_to_server()
+    init.advertise_topic()
+    rate = rospy.Rate(1)
     while not rospy.is_shutdown():
-        init.handling()
+        init.process_handling()
         rate.sleep()
-
+    init.un_advertise_topic()
+    init.exit_from_the_server()
+    
 if __name__ == '__main__':
     main()

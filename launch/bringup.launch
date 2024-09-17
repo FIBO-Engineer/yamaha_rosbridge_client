@@ -3,7 +3,8 @@
           pkg="yamaha_rosbridge_client" 
           type="main.py" 
           output="screen">
-        <param name="uri" value="ws://10.61.6.101:9090"/>
-        <param name="loop_sleep_rate" value="50"/>
+        <param name="host" value="10.61.6.101"/>
+        <param name="port" value="9090"/>
+        <param name="reconnection_period" value="1"/>
     </node>
 </launch>
