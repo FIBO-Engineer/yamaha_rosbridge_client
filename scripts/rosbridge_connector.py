@@ -20,22 +20,22 @@ class RosBridgeConnector():
         self.ws_reconnection_period = rospy.get_param("~reconnection_period", 1)
         self.ws_client = roslibpy.Ros(host=self.ws_host, port=self.ws_port)
         # ROSBridge Websocket Publisher
-        self.ws_vehicle_cmd_publisher = roslibpy.Topic(self.client, "/nav_vel", "geometry_msgs/TwistStamped")
-        self.ws_joy_publisher = roslibpy.Topic(self.client, "/joy", "sensor_msgs/Joy")
+        self.ws_vehicle_cmd_publisher = roslibpy.Topic(self.ws_client, "/nav_vel", "geometry_msgs/TwistStamped")
+        self.ws_joy_publisher = roslibpy.Topic(self.ws_client, "/joy", "sensor_msgs/Joy")
         
         # Private for checking reconnection
         self._timestamp = 0
 
     def connect(self):
         try:
-            self.client.run()
+            self.ws_client.run()
             rospy.loginfo("Server connected")
         except Exception as e:
             rospy.logerr("Unable to connect to server! %s", e)
 
     def advertise_topics(self):
         try:
-            if self.client.is_connected:
+            if self.ws_client.is_connected:
                 self.ws_vehicle_cmd_publisher.advertise()
                 self.ws_joy_publisher.advertise()
                 rospy.loginfo("Topics are successfully advertised")
@@ -46,7 +46,7 @@ class RosBridgeConnector():
 
     def unadvertise_topics(self):
         try:
-            if self.client.is_connected:
+            if self.ws_client.is_connected:
                 self.ws_vehicle_cmd_publisher.unadvertise()
                 self.ws_joy_publisher.unadvertise()
                 rospy.loginfo("Topics are successfully unadvertised")
@@ -57,14 +57,14 @@ class RosBridgeConnector():
     
     def terminate(self):
         try:    
-            self.client.terminate()
+            self.ws_client.terminate()
             rospy.loginfo("Server connection terminated")
         except Exception as e:
             rospy.logerr("Unable to terminate connection with server! %s", e)
 
     def vehicle_cmd_callback(self, data):
         try:
-            if self.client.is_connected:
+            if self.ws_client.is_connected:
                 vehicle_cmd_json = roslibpy.Message(
                     {
                         "header": {
@@ -88,7 +88,7 @@ class RosBridgeConnector():
                         }
                     }
                 )
-                self.publisher.publish(vehicle_cmd_json)
+                self.ws_vehicle_cmd_publisher.publish(vehicle_cmd_json)
                 rospy.loginfo("Published vehicle_cmd message")
             else:
                 rospy.logerr("Server is not connected")
@@ -97,7 +97,7 @@ class RosBridgeConnector():
 
     def joy_callback(self, data):
         try:
-            if self.client.is_connected:
+            if self.ws_client.is_connected:
                 joy_json = roslibpy.Message(
                     {
                         "header": {
@@ -111,7 +111,7 @@ class RosBridgeConnector():
                         "buttons": data.buttons
                     }
                 )
-                self.publisher.publish(joy_json)
+                self.ws_joy_publisher.publish(joy_json)
                 rospy.loginfo("Published joy message")
             else:
                 rospy.logerr("Server is not connected")
@@ -120,7 +120,7 @@ class RosBridgeConnector():
 
     def handle_reconnection(self):
         if time.time() - self._timestamp > self.reconnection_period: 
-            if not self.client.is_connected:
+            if not self.ws_client.is_connected:
                 rospy.logwarn("Unable to connect to the server! Retrying...")
                 self.connect()
                 self.advertise_topics()
