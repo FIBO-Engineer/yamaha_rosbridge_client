@@ -119,7 +119,7 @@ class RosBridgeConnector():
             rospy.logerr("Unable to publish message! %s", e)
 
     def handle_reconnection(self):
-        if time.time() - self._timestamp > self.reconnection_period: 
+        if time.time() - self._timestamp > self.ws_reconnection_period: 
             if not self.ws_client.is_connected:
                 rospy.logwarn("Unable to connect to the server! Retrying...")
                 self.connect()
