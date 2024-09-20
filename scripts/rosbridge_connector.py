@@ -89,7 +89,6 @@ class RosBridgeConnector():
                     }
                 )
                 self.ws_vehicle_cmd_publisher.publish(vehicle_cmd_json)
-                rospy.loginfo("Published vehicle_cmd message")
             else:
                 rospy.logerr("Server is not connected")
         except Exception as e:
@@ -112,7 +111,6 @@ class RosBridgeConnector():
                     }
                 )
                 self.ws_joy_publisher.publish(joy_json)
-                rospy.loginfo("Published joy message")
             else:
                 rospy.logerr("Server is not connected")
         except Exception as e:

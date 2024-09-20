@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
     <include file="$(find yamaha_rosbridge_client)/launch/joy.launch"/>
-    <include file="$(find yamaha_rosbridge_client)/launch/rosbridge_joy.launch"/>
+    <include file="$(find yamaha_rosbridge_client)/launch/rosbridge_connector.launch"/>
 </launch>
