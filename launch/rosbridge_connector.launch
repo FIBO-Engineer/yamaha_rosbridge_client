@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <launch>
     <node name="yamaha_rosbridge_client_node" pkg="yamaha_rosbridge_client" type="rosbridge_connector.py" 
           output="screen">
