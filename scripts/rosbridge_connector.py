@@ -31,9 +31,9 @@ class RosBridgeConnector():
         self.ws_client = roslibpy.Ros(host=self.ws_host, port=self.ws_port)
         # ROSBridge Websocket Subscriber
         self.talker_listener = roslibpy.Topic(self.ws_client, '/chatter', 'std_msgs/String')
-        self.ws_odometry_subscriber = roslibpy.Topic(self.ws_client, '/odometry', 'nav_msgs/Odometry')
-        self.ws_diagnostic_subscriber = roslibpy.Topic(self.ws_client, '/diagnostic', 'diagnostic_msgs/DiagnosticArray')
-        self.ws_joint_trajectory_controller_state_subscriber = roslibpy.Topic(self.ws_client, '/joint_trajectory_controller_state', 'control_msgs/JointTrajectoryControllerState')
+        self.ws_odometry_subscriber = roslibpy.Topic(self.ws_client, '/bicycle_steering_controller/odometry', 'nav_msgs/Odometry')
+        self.ws_diagnostic_subscriber = roslibpy.Topic(self.ws_client, '/diagnostics', 'diagnostic_msgs/DiagnosticArray')
+        self.ws_joint_trajectory_controller_state_subscriber = roslibpy.Topic(self.ws_client, '/bicycle_steering_controller/controller_state', 'control_msgs/SteeringControllerStatus')
         # ROSBridge Websocket Publisher
         self.ws_vehicle_cmd_publisher = roslibpy.Topic(self.ws_client, "/nav_vel", "geometry_msgs/TwistStamped")
         self.ws_joy_publisher = roslibpy.Topic(self.ws_client, "/joy", "sensor_msgs/Joy")
@@ -55,11 +55,14 @@ class RosBridgeConnector():
 
     def websocket_subscriber(self):
         try:
-            self.talker_listener.subscribe(self.talker_listener_callback)
-            self.ws_odometry_subscriber.subscribe(self.ws_odometry_subscriber_callback)
-            self.ws_diagnostic_subscriber.subscribe(self.ws_diagnostic_subscriber_callback)
-            self.ws_joint_trajectory_controller_state_subscriber.subscribe(self.ws_joint_trajectory_controller_state_subscriber_callback)
-            rospy.loginfo("Success for subscribe")
+            if self.ws_client.is_connected:
+                self.talker_listener.subscribe(self.talker_listener_callback)
+                self.ws_odometry_subscriber.subscribe(self.ws_odometry_subscriber_callback)
+                self.ws_diagnostic_subscriber.subscribe(self.ws_diagnostic_subscriber_callback)
+                self.ws_joint_trajectory_controller_state_subscriber.subscribe(self.ws_joint_trajectory_controller_state_subscriber_callback)
+                rospy.loginfo("Success for subscribe")
+            else:
+                rospy.logerr("Unable to subscribe the topic sinces client is not connected to the server yet")
         except Exception as e:
             rospy.logerr("Unable to subscribe from server! %s", e)  
     
@@ -186,37 +189,40 @@ class RosBridgeConnector():
 
     def ws_diagnostic_subscriber_callback(self, data):
         diag_array = DiagnosticArray()
-        for component_name, component_data in data.items():
+        statuses = []
+        for i in range(len(data["status"])):
             status = DiagnosticStatus()
-            status.name = component_name  
-            status.level = component_data["level"] 
-            status.message = component_data["message"] 
-            status.hardware_id = component_data["hardware_id"] 
-            status.values = [KeyValue(key=key, value=value) for key, value in component_data["values"].items()]
-            diag_array.status.append(status)
+            status.name = data["status"][i]["name"]
+            status.level = data["status"][i]["level"]
+            status.message = data["status"][i]["message"]
+            status.hardware_id = data["status"][i]["hardware_id"]
+            keys_values = []
+            for j in range(len(data["status"][i]["values"])):
+                key_value = KeyValue()
+                key_value.key = data["status"][i]["values"][j]["key"]
+                key_value.value = data["status"][i]["values"][j]["value"]
+                keys_values.append(key_value)
+            status.values.extend(keys_values)      
+            statuses.append(status)
+        diag_array.status.extend(statuses)
         self.diagnostic_publisher.publish(diag_array)
 
     def ws_joint_trajectory_controller_state_subscriber_callback(self, data):
         joint_state_msg = JointTrajectoryControllerState()
-        joint_state_msg.joint_names = data["joint_names"]
-        joint_state_msg.desired.positions = data["desired"]["positions"]
-        joint_state_msg.desired.velocities = data["desired"]["velocities"]
-        joint_state_msg.desired.accelerations = data["desired"]["accelerations"]
-        joint_state_msg.desired.effort = data["desired"]["effort"]
-        joint_state_msg.actual.positions = data["actual"]["positions"]
-        joint_state_msg.actual.velocities = data["actual"]["velocities"]
-        joint_state_msg.actual.accelerations = data["actual"]["accelerations"]
-        joint_state_msg.actual.effort = data["actual"]["effort"]
-        joint_state_msg.error.positions = data["error"]["positions"]
-        joint_state_msg.error.velocities = data["error"]["velocities"]
-        joint_state_msg.error.accelerations = data["error"]["accelerations"]
-        joint_state_msg.error.effort = data["error"]["effort"]
+        joint_state_msg.joint_names = ["rear_wheel", "steering_axis"]
+        joint_state_msg.actual.positions.insert(0, data['traction_wheels_position'][0])
+        joint_state_msg.actual.velocities.insert(0, data['traction_wheels_velocity'][0])
+        joint_state_msg.actual.positions.insert(1, data['steer_positions'][0])
+        joint_state_msg.desired.velocities.insert(0, data['linear_velocity_command'][0])
+        joint_state_msg.desired.positions.insert(0, 0.0)
+        joint_state_msg.desired.positions.insert(1, data['steering_angle_command'][0])
         self.joint_trajectory_controller_state_publisher.publish(joint_state_msg)
 
     def set_zero_position_service_server(self, req):
         response = TriggerResponse()
         ws_request = roslibpy.ServiceRequest()
         self.ws_service_request.call(ws_request, self.ws_service_callback, self.ws_service_error_callback)
+        time.sleep(2)
         if self._is_ws_service_server_correct_response:
             response.success = self._success_status
             response.message = self._response_message
