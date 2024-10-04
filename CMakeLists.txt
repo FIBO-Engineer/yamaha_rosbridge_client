@@ -11,6 +11,10 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   autoware_msgs
   sensor_msgs
+  std_msgs
+  nav_msgs
+  diagnostic_msgs
+  control_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -111,7 +115,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES yamaha_rosbridge_client
-  CATKIN_DEPENDS rospy autoware_msgs sensor_msgs
+  CATKIN_DEPENDS rospy autoware_msgs sensor_msgs std_msgs nav_msgs diagnostic_msgs control_msgs
 #  DEPENDS system_lib
 )
 

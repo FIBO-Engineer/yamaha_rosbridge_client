@@ -57,7 +57,16 @@
   <exec_depend>autoware_msgs</exec_depend>
   <build_depend>sensor_msgs</build_depend>
   <exec_depend>sensor_msgs</exec_depend>
-  
+  <build_depend>std_msgs</build_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <build_depend>nav_msgs</build_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <build_depend>diagnostic_msgs</build_depend>
+  <exec_depend>diagnostic_msgs</exec_depend>
+  <build_depend>control_msgs</build_depend>
+  <exec_depend>control_msgs</exec_depend>
+
+
   <exec_depend>joy</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
