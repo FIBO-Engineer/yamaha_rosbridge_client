@@ -27,17 +27,24 @@ class RosBridgeConnector():
         # ROSBridge Websocket Instantiation
         self.ws_host = rospy.get_param("~host", "127.0.0.1")
         self.ws_port = rospy.get_param("~port", "9090")
+        self.ws_host_2 = rospy.get_param("~host_2", "127.0.0.1")
+        self.ws_port_2 = rospy.get_param("~port_2", "9090")
+        self.ws_host_input = self.ws_host
+        self.ws_port_input = self.ws_port        
         self.ws_reconnection_period = rospy.get_param("~reconnection_period", 1)
-        self.ws_client = roslibpy.Ros(host=self.ws_host, port=self.ws_port)
+        self.ws_client = roslibpy.Ros(host=self.ws_host_input, port=self.ws_port_input)
         # ROSBridge Websocket Subscriber
-        self.talker_listener = roslibpy.Topic(self.ws_client, '/chatter', 'std_msgs/String')
         self.ws_odometry_subscriber = roslibpy.Topic(self.ws_client, '/bicycle_steering_controller/odometry', 'nav_msgs/Odometry')
         self.ws_diagnostic_subscriber = roslibpy.Topic(self.ws_client, '/diagnostics', 'diagnostic_msgs/DiagnosticArray')
         self.ws_joint_trajectory_controller_state_subscriber = roslibpy.Topic(self.ws_client, '/bicycle_steering_controller/controller_state', 'control_msgs/SteeringControllerStatus')
         # ROSBridge Websocket Publisher
+        self.ws_publisher_array = []
         self.ws_vehicle_cmd_publisher = roslibpy.Topic(self.ws_client, "/nav_vel", "geometry_msgs/TwistStamped")
+        self.ws_publisher_array.append(self.ws_vehicle_cmd_publisher)
         self.ws_joy_publisher = roslibpy.Topic(self.ws_client, "/joy", "sensor_msgs/Joy")
+        self.ws_publisher_array.append(self.ws_joy_publisher)
         self.ws_brake_command_publisher = roslibpy.Topic(self.ws_client, "/brake_cmd", "std_msgs/Float64")
+        self.ws_publisher_array.append(self.ws_brake_command_publisher)
         # ROSBridge Websocket Service Request
         self.ws_service_request = roslibpy.Service(self.ws_client, '/set_zero_position', 'std_srvs/Trigger')
         # Private for checking reconnection
@@ -45,18 +52,19 @@ class RosBridgeConnector():
         self._response_message = None
         self._success_status = None
         self._is_ws_service_server_correct_response = False
-
+        self._is_connected_initial = False
+    
     def connect(self):
         try:
-            self.ws_client.run()
-            rospy.loginfo("Server connected")
+            self.ws_client.run(timeout=0.5)
+            rospy.loginfo(f"Server ip: {self.ws_host_input} port: {self.ws_port_input} connected")
         except Exception as e:
-            rospy.logerr("Unable to connect to server! %s", e)
+            # rospy.logerr("Unable to connect to server! %s", e)
+            rospy.logerr(f"Unable to connect to server ip: {self.ws_host_input} port: {self.ws_port_input} and the error is {e}")
 
     def websocket_subscriber(self):
         try:
             if self.ws_client.is_connected:
-                self.talker_listener.subscribe(self.talker_listener_callback)
                 self.ws_odometry_subscriber.subscribe(self.ws_odometry_subscriber_callback)
                 self.ws_diagnostic_subscriber.subscribe(self.ws_diagnostic_subscriber_callback)
                 self.ws_joint_trajectory_controller_state_subscriber.subscribe(self.ws_joint_trajectory_controller_state_subscriber_callback)
@@ -69,9 +77,8 @@ class RosBridgeConnector():
     def advertise_topics(self):
         try:
             if self.ws_client.is_connected:
-                self.ws_vehicle_cmd_publisher.advertise()
-                self.ws_joy_publisher.advertise()
-                self.ws_brake_command_publisher.advertise()
+                for i in range(len(self.ws_publisher_array)):
+                    self.ws_publisher_array[i].advertise()
                 rospy.loginfo("Topics are successfully advertised")
             else:
                 rospy.logerr("Unable to advertise the topic sinces client is not connected to the server yet")
@@ -81,8 +88,8 @@ class RosBridgeConnector():
     def unadvertise_topics(self):
         try:
             if self.ws_client.is_connected:
-                self.ws_vehicle_cmd_publisher.unadvertise()
-                self.ws_joy_publisher.unadvertise()
+                for i in range(len(self.ws_publisher_array)):
+                    self.ws_publisher_array[i].unadvertise()
                 rospy.loginfo("Topics are successfully unadvertised")
             else:
                 rospy.logerr("Unable to unadvertise the topics since client is not connected to the server yet")
@@ -163,9 +170,6 @@ class RosBridgeConnector():
                 rospy.logerr("Server is not connected")
         except Exception as e:
             rospy.logerr("Unable to publish message! %s", e)
-
-    def talker_listener_callback(self, data):
-        rospy.loginfo("Data: %s", data)
     
     def ws_odometry_subscriber_callback(self, data):
         odom = Odometry()
@@ -242,17 +246,43 @@ class RosBridgeConnector():
     def handle_reconnection(self):
         if time.time() - self._timestamp > self.ws_reconnection_period: 
             if not self.ws_client.is_connected:
-                rospy.logwarn("Unable to connect to the server! Retrying...")
+                if self.ws_host_input == self.ws_host and self.ws_port_input == self.ws_port:
+                    self.ws_host_input = self.ws_host_2
+                    self.ws_port_input = self.ws_port_2
+                    self.ws_client = roslibpy.Ros(host=self.ws_host_input, port=self.ws_port_input)
+                elif self.ws_host_input == self.ws_host_2 and self.ws_port_input == self.ws_port_2:
+                    self.ws_host_input = self.ws_host
+                    self.ws_port_input = self.ws_port
+                    self.ws_client = roslibpy.Ros(host=self.ws_host_input, port=self.ws_port_input)
+                else:
+                    self.ws_host_input = self.ws_host_2
+                    self.ws_port_input = self.ws_port_2
+                    self.ws_client = roslibpy.Ros(host=self.ws_host_input, port=self.ws_port_input)
+                rospy.logwarn(f"Retrying to sever ip:{self.ws_host_input} and port:{self.ws_port_input}")
                 self.connect()
+                self._is_connected_initial = False
+            if self.ws_client.is_connected and not self._is_connected_initial:
+                self.ws_odometry_subscriber = roslibpy.Topic(self.ws_client, '/bicycle_steering_controller/odometry', 'nav_msgs/Odometry')
+                self.ws_diagnostic_subscriber = roslibpy.Topic(self.ws_client, '/diagnostics', 'diagnostic_msgs/DiagnosticArray')
+                self.ws_joint_trajectory_controller_state_subscriber = roslibpy.Topic(self.ws_client, '/bicycle_steering_controller/controller_state', 'control_msgs/SteeringControllerStatus')
+                self.ws_publisher_array = []
+                self.ws_vehicle_cmd_publisher = roslibpy.Topic(self.ws_client, "/nav_vel", "geometry_msgs/TwistStamped")
+                self.ws_publisher_array.append(self.ws_vehicle_cmd_publisher)
+                self.ws_joy_publisher = roslibpy.Topic(self.ws_client, "/joy", "sensor_msgs/Joy")
+                self.ws_publisher_array.append(self.ws_joy_publisher)
+                self.ws_brake_command_publisher = roslibpy.Topic(self.ws_client, "/brake_cmd", "std_msgs/Float64")
+                self.ws_publisher_array.append(self.ws_brake_command_publisher)
+                self.ws_service_request = roslibpy.Service(self.ws_client, '/set_zero_position', 'std_srvs/Trigger')
                 self.websocket_subscriber()
                 self.advertise_topics()
+                self._is_connected_initial = True
             self._timestamp = time.time()
 
 def main():
     init = RosBridgeConnector()
     init.connect()
-    init.websocket_subscriber()
-    init.advertise_topics()
+    # init.websocket_subscriber()
+    # init.advertise_topics()
     rate = rospy.Rate(1)
     while not rospy.is_shutdown():
         init.handle_reconnection()

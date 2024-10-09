@@ -4,6 +4,8 @@
           output="screen">
         <param name="host" value="192.168.100.4"/>
         <param name="port" value="9090"/>
-        <param name="reconnection_period" value="1"/>
+        <param name="host_2" value="192.168.100.5"/>
+        <param name="port_2" value="9090"/>
+        <param name="reconnection_period" value="0.1"/>
     </node>
 </launch>
