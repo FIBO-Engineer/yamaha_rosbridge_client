@@ -108,13 +108,13 @@ class RosBridgeConnector():
             if self.ws_client.is_connected:
                 vehicle_cmd_json = roslibpy.Message(
                     {
-                        # "header": {
-                        #     "stamp": {
-                        #         "secs": data.header.stamp.secs,
-                        #         "nsecs": data.header.stamp.nsecs
-                        #     },
-                        #     "frame_id": data.header.frame_id
-                        # },
+                        "header": {
+                            # "stamp": {
+                            #     "secs": data.header.stamp.secs,
+                            #     "nsecs": data.header.stamp.nsecs
+                            # },
+                            "frame_id": data.header.frame_id
+                        },
                         "twist": {
                             "linear": {
                                 "x": data.twist_cmd.twist.linear.x,
@@ -141,10 +141,10 @@ class RosBridgeConnector():
                 joy_json = roslibpy.Message(
                     {
                         "header": {
-                            "stamp": {
-                                "secs": data.header.stamp.secs,
-                                "nsecs": data.header.stamp.nsecs
-                            },
+                            # "stamp": {
+                            #     "secs": data.header.stamp.secs,
+                            #     "nsecs": data.header.stamp.nsecs
+                            # },
                             "frame_id": data.header.frame_id
                         },
                         "axes": data.axes,
