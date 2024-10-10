@@ -2,9 +2,9 @@
 <launch>
     <node name="yamaha_rosbridge_client_node" pkg="yamaha_rosbridge_client" type="rosbridge_connector.py" 
           output="screen">
-        <param name="host" value="192.168.100.5"/>
+        <param name="host" value="192.168.127.103"/>
         <param name="port" value="9090"/>
-        <param name="host_2" value="192.168.100.4"/>
+        <param name="host_2" value="192.168.127.104"/>
         <param name="port_2" value="9090"/>
         <param name="reconnection_period" value="0.1"/>
     </node>

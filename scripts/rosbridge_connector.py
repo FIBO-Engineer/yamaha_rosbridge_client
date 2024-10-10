@@ -387,7 +387,7 @@ class RosBridgeConnector():
               self.ws_client_2.is_connected): 
             self.ws_service_request_2.call(ws_request, self.ws_service_callback_2, self.ws_service_error_callback_2)
             time.sleep(2)
-            if self._is_ws_service_server_correct_response:
+            if self._is_ws_service_server_correct_response_2:
                 response.success = self._success_status_2
                 response.message = self._response_message_2
             else:
