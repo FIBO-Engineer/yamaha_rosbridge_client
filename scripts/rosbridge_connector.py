@@ -59,6 +59,11 @@ class RosBridgeConnector():
         self._response_message_2 = None
         self._success_status_2 = None
         self._is_ws_service_server_correct_response_2 = False
+        self._traction_position = 0
+        self._timestamp_traction = 0
+        self._traction_position_2 = 0
+        self._timestamp_traction_2 = 0
+
     
     def connect(self, host, port):
         if host == self.ws_host and port == self.ws_port:
@@ -333,27 +338,35 @@ class RosBridgeConnector():
         diag_array.status.extend(statuses)
         self.diagnostic_publisher.publish(diag_array)
 
-    def ws_joint_trajectory_controller_state_subscriber_callback(self, data):
+    def ws_joint_trajectory_controller_state_subscriber_callback(self, data):       
         joint_state_msg = JointTrajectoryControllerState()
         joint_state_msg.joint_names = ["rear_wheel", "steering_axis"]
         joint_state_msg.actual.positions.insert(0, data['traction_wheels_position'][0])
-        joint_state_msg.actual.velocities.insert(0, data['traction_wheels_velocity'][0])
+        real_time = time.time()
+        traction_velocity = (data['traction_wheels_position'][0] - self._traction_position) / (real_time - self._timestamp_traction)
+        joint_state_msg.actual.velocities.insert(0, traction_velocity)
         joint_state_msg.actual.positions.insert(1, data['steer_positions'][0])
         joint_state_msg.desired.velocities.insert(0, data['linear_velocity_command'][0])
         joint_state_msg.desired.positions.insert(0, 0.0)
         joint_state_msg.desired.positions.insert(1, data['steering_angle_command'][0])
         self.joint_trajectory_controller_state_publisher.publish(joint_state_msg)
+        self._traction_position = data['traction_wheels_position'][0]
+        self._timestamp_traction = time.time()
 
     def ws_joint_trajectory_controller_state_subscriber_callback_2(self, data):
         joint_state_msg = JointTrajectoryControllerState()
         joint_state_msg.joint_names = ["rear_wheel", "steering_axis"]
         joint_state_msg.actual.positions.insert(0, data['traction_wheels_position'][0])
-        joint_state_msg.actual.velocities.insert(0, data['traction_wheels_velocity'][0])
+        real_time_2 = time.time()
+        traction_velocity_2 = (data['traction_wheels_position'][0] - self._traction_position_2) / (real_time_2 - self._timestamp_traction_2)       
+        joint_state_msg.actual.velocities.insert(0, traction_velocity_2)
         joint_state_msg.actual.positions.insert(1, data['steer_positions'][0])
         joint_state_msg.desired.velocities.insert(0, data['linear_velocity_command'][0])
         joint_state_msg.desired.positions.insert(0, 0.0)
         joint_state_msg.desired.positions.insert(1, data['steering_angle_command'][0])
         self.joint_trajectory_controller_state_publisher.publish(joint_state_msg)
+        self._traction_position_2 = data['traction_wheels_position'][0]
+        self._timestamp_traction_2 = time.time()
 
     def set_zero_position_service_server(self, req):
         response = TriggerResponse()
