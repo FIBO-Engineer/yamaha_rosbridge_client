@@ -1,0 +1,4 @@
+bool primary_node_running
+bool primary_controller_active
+bool redundant_node_running
+bool redundant_controller_active
