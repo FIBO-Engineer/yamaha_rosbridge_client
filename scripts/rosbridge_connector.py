@@ -354,7 +354,7 @@ class Ros1Handling():
         response = TriggerResponse()
         request = roslibpy.ServiceRequest()
         if self.primary_init.ws_client.is_connected: 
-            service = roslibpy.Service(self.primary_init.ws_client, '/set_zero_position', 'std_srvs/Trigger')
+            service = roslibpy.Service(self.primary_init.ws_client, '/keya_driver/set_zero_position', 'std_srvs/Trigger')
             service.call(request, self.primary_init.set_zero_position_handle_success, self.primary_init.set_zero_position_handle_failure)
             time.sleep(2)
             if self.primary_init._is_set_zero_position_success:
@@ -365,7 +365,7 @@ class Ros1Handling():
                 response.message = "The ws server is error"
         elif self.redundant_init.ws_client.is_connected:
             # self.ws_service_request_2.call(request, self.ws_service_callback_2, self.ws_service_error_callback_2)
-            service = roslibpy.Service(self.redundant_init.ws_client, '/set_zero_position', 'std_srvs/Trigger')
+            service = roslibpy.Service(self.redundant_init.ws_client, '/keya_driver/set_zero_position', 'std_srvs/Trigger')
             service.call(request, self.redundant_init.set_zero_position_handle_success, self.redundant_init.set_zero_position_handle_failure)
             time.sleep(2)
             if self.redundant_init._is_set_zero_position_success:
