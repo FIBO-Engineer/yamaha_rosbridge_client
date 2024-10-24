@@ -398,7 +398,7 @@ class Ros1Handling():
         elif self.redundant_init.ws_client.is_connected:
             service = roslibpy.Service(self.redundant_init.ws_client, '/controller_manager/list_controllers', 'controller_manager_msgs/ListControllers')
             service.call(request, self.redundant_init.list_controllers_handle_success, self.redundant_init.list_controllers_handle_failure)
-            time.sleep(0.5) 
+            time.sleep(2) 
             if self.redundant_init._is_list_controllers_success:
                 success_response = self.redundant_init._ws_list_controllers_callback
             else:
