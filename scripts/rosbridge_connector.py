@@ -12,7 +12,7 @@ from control_msgs.msg import JointTrajectoryControllerState
 from controller_manager_msgs.srv import ListControllers, ListControllersResponse
 from controller_manager_msgs.msg import ControllerState, HardwareInterfaceResources
 from std_srvs.srv import Trigger, TriggerResponse, SetBool, SetBoolResponse
-from yamaha_rosbridge_client.msg import RedundancyStatus
+from ros2_redundancy.msg import RedundancyStatus
 
 class RosBridgeConnector():
     # ROS Publisher

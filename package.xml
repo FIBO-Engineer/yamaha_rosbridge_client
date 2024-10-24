@@ -68,8 +68,8 @@
   <build_depend>controller_manager_msgs</build_depend>
   <exec_depend>controller_manager_msgs</exec_depend>
 
-  <build_depend>message_generation</build_depend>
-  <exec_depend>message_runtime</exec_depend>
+  <!-- <build_depend>message_generation</build_depend>
+  <exec_depend>message_runtime</exec_depend> -->
 
   <exec_depend>joy</exec_depend>
 
