@@ -67,7 +67,8 @@
   <exec_depend>control_msgs</exec_depend>
   <build_depend>controller_manager_msgs</build_depend>
   <exec_depend>controller_manager_msgs</exec_depend>
-
+  <build_depend>ros2_redundancy</build_depend>
+  <exec_depend>ros2_redundancy</exec_depend>
   <!-- <build_depend>message_generation</build_depend>
   <exec_depend>message_runtime</exec_depend> -->
 

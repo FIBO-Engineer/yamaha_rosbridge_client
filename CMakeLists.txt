@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   diagnostic_msgs
   control_msgs
   controller_manager_msgs
+  ros2_redundancy
   # message_generation
 )
 
@@ -125,7 +126,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES yamaha_rosbridge_client
-  CATKIN_DEPENDS rospy autoware_msgs sensor_msgs std_msgs nav_msgs diagnostic_msgs control_msgs controller_manager_msgs
+  CATKIN_DEPENDS rospy autoware_msgs sensor_msgs std_msgs nav_msgs diagnostic_msgs control_msgs controller_manager_msgs ros2_redundancy
 #  DEPENDS system_lib
 )
 
