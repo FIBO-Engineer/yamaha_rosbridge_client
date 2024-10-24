@@ -384,7 +384,7 @@ class Ros1Handling():
             service.call(request, self.primary_init.list_controllers_handle_success, self.primary_init.list_controllers_handle_failure)
             time.sleep(2)
             if self.primary_init._is_list_controllers_success:
-                success_response = self.primary_init._ws_list_controllers_success_callback
+                success_response = self.primary_init._ws_list_controllers_callback
             else:
                 controller = ControllerState()
                 controller.name = "Fail"
