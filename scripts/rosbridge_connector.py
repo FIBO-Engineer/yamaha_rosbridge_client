@@ -187,10 +187,11 @@ class RosBridgeConnector():
     def ws_joint_trajectory_controller_state_subscriber_callback(self, data):       
         joint_state_msg = JointTrajectoryControllerState()
         joint_state_msg.joint_names = ["rear_wheel", "steering_axis"]
-        joint_state_msg.actual.positions.insert(0, data['traction_wheels_position'][0])
-        real_time = time.time()
-        traction_velocity = (data['traction_wheels_position'][0] - self._traction_position) / (real_time - self._timestamp_traction)
-        joint_state_msg.actual.velocities.insert(0, traction_velocity)
+        # joint_state_msg.actual.positions.insert(0, data['traction_wheels_position'][0])
+        # real_time = time.time()
+        # traction_velocity = (data['traction_wheels_position'][0] - self._traction_position) / (real_time - self._timestamp_traction)
+        # joint_state_msg.actual.velocities.insert(0, traction_velocity)
+        joint_state_msg.actual.velocities.insert(0, data['traction_wheels_velocity'][0])
         joint_state_msg.actual.positions.insert(1, data['steer_positions'][0])
         joint_state_msg.desired.velocities.insert(0, data['linear_velocity_command'][0])
         joint_state_msg.desired.positions.insert(0, 0.0)
