@@ -63,7 +63,7 @@ class RosBridgeConnector():
 
     def connect(self):
         try:
-            self.ws_client.run(timeout=1)
+            self.ws_client.run(timeout=5)
             rospy.loginfo(f"Server ip: {self.ws_host} port: {self.ws_port} connected")
             return True
         except Exception as e:
