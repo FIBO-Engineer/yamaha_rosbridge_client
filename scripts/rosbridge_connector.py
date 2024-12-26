@@ -27,6 +27,7 @@ class RosBridgeConnector():
     slip_publisher = rospy.Publisher('/roboteq_driver/slip', Float64MultiArray, queue_size=50)
     voltages_publisher = rospy.Publisher('/roboteq_driver/voltages', Float64MultiArray, queue_size=50)
     redundancy_publisher = rospy.Publisher('/redundancy_status', RedundancyStatus, queue_size=50)
+    connection_count = 0
 
     def __init__(self, host, port):
         # ROSBridge Websocket Instantiation
@@ -61,12 +62,27 @@ class RosBridgeConnector():
         self._ws_set_bool_position_callback_message = None
         self._is_set_bool_position_success = False
 
+    @classmethod
+    def connection_check(cls):
+        cls.connection_count += 1
+        # rospy.loginfo(f"connection_count {cls.connection_count}")
+        if cls.connection_count > 10:   
+            rospy.loginfo("Shutting down node wait for respawn...")
+            rospy.signal_shutdown("Node terminated and respawning")             
+
+    @classmethod
+    def connection_count_reset(cls):
+        cls.connection_count = 0 
+        # rospy.loginfo(f"connection_count {cls.connection_count}")        
+
     def connect(self):
         try:
-            self.ws_client.run(timeout=5)
+            self.ws_client.run(timeout=2)
             rospy.loginfo(f"Server ip: {self.ws_host} port: {self.ws_port} connected")
+            self.connection_count_reset()
             return True
         except Exception as e:
+            self.connection_check()
             rospy.logerr(f"Unable to connect to server ip: {self.ws_host} port: {self.ws_port} and the error is {e}")
             return False
         
@@ -427,11 +443,11 @@ class Ros1Handling():
 
 def main():
     rospy.init_node('yamaha_rosbridge_client')
-    ws_primary_host = rospy.get_param("~primary_host", "192.168.100.4")
+    ws_primary_host = rospy.get_param("~primary_host", "192.168.127.103")
     ws_primary_port = rospy.get_param("~primary_port", "9090")
-    ws_redundant_host = rospy.get_param("~redundant_host", "192.168.100.5")
+    ws_redundant_host = rospy.get_param("~redundant_host", "192.168.127.104")
     ws_redundant_port = rospy.get_param("~redundant_port", "9090")
-    ws_reconnection_period = rospy.get_param("~reconnection_period", "0.5")
+    ws_reconnection_period = rospy.get_param("~reconnection_period", "3")
     ws_host_desire = ws_primary_host
     ws_port_desire = ws_primary_port
     primary_init = RosBridgeConnector(ws_primary_host, ws_primary_port)
