@@ -6,6 +6,6 @@
         <param name="primary_port" value="9090"/>
         <param name="redundant_host" value="192.168.127.104"/>
         <param name="redundant_port" value="9090"/>
-        <param name="reconnection_period" value="3"/>
+        <param name="reconnection_period" value="0.5"/>
     </node>
 </launch>

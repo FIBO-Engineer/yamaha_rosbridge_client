@@ -66,7 +66,7 @@ class RosBridgeConnector():
     def connection_check(cls):
         cls.connection_count += 1
         # rospy.loginfo(f"connection_count {cls.connection_count}")
-        if cls.connection_count > 10:   
+        if cls.connection_count > 2:   
             rospy.loginfo("Shutting down node wait for respawn...")
             rospy.signal_shutdown("Node terminated and respawning")             
 
@@ -77,7 +77,7 @@ class RosBridgeConnector():
 
     def connect(self):
         try:
-            self.ws_client.run(timeout=2)
+            self.ws_client.run(timeout=0.25)
             rospy.loginfo(f"Server ip: {self.ws_host} port: {self.ws_port} connected")
             self.connection_count_reset()
             return True
@@ -447,7 +447,7 @@ def main():
     ws_primary_port = rospy.get_param("~primary_port", "9090")
     ws_redundant_host = rospy.get_param("~redundant_host", "192.168.127.104")
     ws_redundant_port = rospy.get_param("~redundant_port", "9090")
-    ws_reconnection_period = rospy.get_param("~reconnection_period", "3")
+    ws_reconnection_period = rospy.get_param("~reconnection_period", "0.5")
     ws_host_desire = ws_primary_host
     ws_port_desire = ws_primary_port
     primary_init = RosBridgeConnector(ws_primary_host, ws_primary_port)
